@@ -38,7 +38,7 @@ pipeline {
         }
         stage('testeo ejecucion contenedor'){
             steps{
-                sh 'docker run -d --rm --env-file=.env --name backend-node-devops-container localhost:8082/backend-node-devops:cmd'
+                sh 'docker run -d --rm -p 8000:3000 -e USERNAME=CMD -e PORT=3000 --name backend-node-devops-container localhost:8082/backend-node-devops:cmd'
             }
         }
     }
