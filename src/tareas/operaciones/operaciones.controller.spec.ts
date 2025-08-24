@@ -91,5 +91,13 @@ describe('OperacionesController (e2e)', () => {
         .expect(HttpStatus.BAD_GATEWAY)
         .expect({ resultado: null, mensaje: 'operacion no pudo ser calculada' });
     });
+
+    it('debería retornar 502 si no se provee una operación', () => {
+      return request(app.getHttpServer())
+        .get('/operaciones')
+        .query({ a: 10, b: 5 })
+        .expect(HttpStatus.BAD_GATEWAY)
+        .expect({ resultado: null, mensaje: 'operacion no pudo ser calculada' });
+    });
   });
 });
