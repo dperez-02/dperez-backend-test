@@ -9,10 +9,12 @@ pipeline {
                 }
             }
             stages{
-                steps('install dependencies') {
-                    sh 'npm install'
-                }
-            }
+                stage('install dependencies'){
+                    steps {
+                        sh 'npm install'
+                    }
+                }    
+            }   
         }
     }
 }
