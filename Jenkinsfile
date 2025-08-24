@@ -26,5 +26,10 @@ pipeline {
                 } 
             }   
         }
+        stage('etapa empaquetado y delivery'){
+            steps('etapa de delivery'){
+                sh 'docker build -t backend-node-devops:cmd .'
+            }
+        }
     }
 }
