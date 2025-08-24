@@ -101,3 +101,6 @@ npm install
 npm run test:cov
 docker build -t backend-node-devops:latest .
 docker run --rm -p 8000:4000 --name jenkins-container-node-devops jenkins-backend-node-devops:cmd
+
+
+test jenkins
