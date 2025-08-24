@@ -48,12 +48,12 @@ pipeline {
                         timeout(time:30, unit:'SECONDS'){
                             script{
                                 def qg = waitForQualityGate()
-                                if(qg.stados != 'OK'){
+                                if(qg.status != 'OK'){
                                     error "Quality Gate failed with status ${qg.status}"
                                 }
                             }
                         }
-                    }   
+                    }
                 }
             }
         }
