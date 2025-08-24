@@ -37,7 +37,7 @@ pipeline {
             stages{
                 stage('upload código a sonarqube'){
                     steps{
-                        withSonarQubeEnv('sonarqube'){
+                        withSonarQubeEnv('SonarQube'){
                             sh 'sonar-scanner'
                         }
                         
