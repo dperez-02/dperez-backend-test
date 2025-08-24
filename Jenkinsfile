@@ -1,9 +1,17 @@
 pipeline {
     agent any 
     stages {
-        stage('install dependencies') {
-            steps {
-                sh 'npm install'
+        stage('install docker node:22') {
+            agent {
+                docker{
+                    image 'node:22'
+                    reuseNode true
+                }
+            }
+            stages{
+                steps('install dependencies') {
+                    sh 'npm install'
+                }
             }
         }
     }
