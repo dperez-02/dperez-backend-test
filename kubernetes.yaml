@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-node-devops
+  namespace: devops
+  labels:
+    app: backend-node-devops
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: backend-node-devops
+  template:
+    metadata:
+      labels:
+        app: backend-node-devops
+    spec:
+      containers:
+        - name: backend-node-devops
+          image: localhost:8082/backend-node-devops:cmd
+          imagePullPolicy: Always
+          env:
+            - name: NODE_ENV
+              value: development
+            - name: USERNAME
+              value: CMD
+            - name: PORT
+              value: "3000"
+      imagePullSecrets:
+        - name: docker-registry-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-node-devops
+  namespace: devops
+  labels:
+    app: backend-node-devops
+spec:
+  selector:
+    app: backend-node-devops
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      
+         
+    
