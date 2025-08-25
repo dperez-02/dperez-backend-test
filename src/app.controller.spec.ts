@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { INestApplication, HttpStatus } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './app.module';
+import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 import configuration from './config/configuration';
 
@@ -152,5 +153,41 @@ describe('AppController (e2e)', () => {
 
   it('/validate-rut (GET) debería retornar 400 si no se provee un RUT', () => {
     return request(app.getHttpServer()).get('/validate-rut').expect(400).expect({ mensaje: 'rut invalido' });
+  });
+});
+
+describe('AppController (e2e) - Default Configuration', () => {
+  let app: INestApplication;
+  const OLD_ENV = process.env;
+
+  beforeAll(async () => {
+    jest.resetModules(); // Limpiar caché de módulos para recargar la configuración.
+    process.env = { ...OLD_ENV }; // Crear una copia para no mutar el original.
+    delete process.env.PORT;
+    delete process.env.USERNAME;
+
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+    process.env = OLD_ENV; // Restaurar env original.
+  });
+
+  it('debería usar el puerto por defecto (3000) si no se define PORT en las variables de entorno', () => {
+    const configService = app.get(ConfigService);
+    expect(configService.get('app.port')).toBe(3000);
+  });
+
+  it('debería usar un username vacío si no se define USERNAME en las variables de entorno', () => {
+    return request(app.getHttpServer())
+      .get('/')
+      .expect(200)
+      .expect('Hello !!');
   });
 });
