@@ -58,11 +58,13 @@ pipeline {
             }
         }
         stage('Etapa empaquetado y delivery'){
+            sh 'docker build -t backend-node-devops .'
+            sh "docker tag backend-node-devops:latest localhost:8082/backend-node-devops:${BUILD_NUMBER}"
             steps('Etapa de delivery'){
                 script{
                     docker.withRegistry('http://localhost:8082/', 'nexus-credentials'){
-                    sh 'docker tag backend-node-devops:cmd localhost:8082/backend-node-devops:cmd'
-                    sh 'docker push localhost:8082/backend-node-devops:cmd'
+                    sh "docker push backend-node-devops:latest"
+                    sh "docker push localhost:8082/backend-node-devops:${BUILD_NUMBER}"
                     }
                 }  
             }
