@@ -1,36 +1,97 @@
 pipeline {
     agent any 
-
     stages {
-        stage('install') {
-            steps {
-                checkout scm
-            }
-        }
-        stage('Build') {
-            steps {
-                script {
-                    sh 'docker build -t my-spring-app .'
+        stage('Install docker node:22') {
+            agent {
+                docker{
+                    image 'node:22'
+                    reuseNode true
                 }
             }
+            stages{
+                stage('Install dependencies'){
+                    steps {
+                        sh 'npm install'
+                    }
+                }
+                stage('Ejecución tests'){
+                    steps{
+                        sh 'npm run test:cov'
+                    }
+                }    
+                stage('Construcción aplicación'){
+                    steps{
+                        sh 'npm run build'
+                    }
+                } 
+            }   
         }
-        stage('Test') {
-            steps {
-                script {
-                    sh 'docker run --rm my-spring-app mvn test'
+        stage('Quality Assurance'){
+            agent{
+                docker{
+                    image 'sonarsource/sonar-scanner-cli'
+                    args '--network=devops-infra_default'
+                    reuseNode true
                 }
             }
-        }
-        stage('Push to Docker Hub') {
-            steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_HUB_USERNAME')]) {
-                        sh "docker tag my-spring-app ${DOCKER_HUB_USERNAME}/my-spring-app:latest"
-                        sh "echo ${DOCKER_HUB_PASSWORD} | docker login -u ${DOCKER_HUB_USERNAME} --password-stdin"
-                        sh "docker push ${DOCKER_HUB_USERNAME}/my-spring-app:latest"
+            stages{
+                stage('Upload código a sonarqube'){
+                    steps{
+                        withSonarQubeEnv('SonarQube'){
+                            sh 'sonar-scanner'
+                        }
+                        
+                    }
+                }
+                stage('Quality Gate'){
+                    steps{
+                        timeout(time:30, unit:'SECONDS'){
+                            script{
+                                def qg = waitForQualityGate()
+                                if(qg.status != 'OK'){
+                                    error "Quality Gate failed with status ${qg.status}"
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
+        stage('Etapa empaquetado y delivery'){
+            steps{
+                sh 'docker build -t backend-node-devops .'
+                sh "docker tag backend-node-devops:latest localhost:8082/backend-node-devops:latest"
+                sh "docker tag backend-node-devops:latest localhost:8082/backend-node-devops:${BUILD_NUMBER}"
+            
+                script{
+                    docker.withRegistry('http://localhost:8082/', 'nexus-credentials'){
+                    sh "docker push localhost:8082/backend-node-devops:latest"
+                    sh "docker push localhost:8082/backend-node-devops:${BUILD_NUMBER}"
+                    }
+                }  
+            }
+        }
+
+        stage('Despliegue continuo') {
+            when {
+                branch 'main'
+            }
+            agent{
+                docker{
+                    image 'alpine/k8s:1.32.2'
+                    reuseNode true
+                }
+            }
+            steps {
+                withKubeConfig([credentialsId: 'kubeconfig-docker']){
+                     sh "kubectl -n devops set image deployments backend-node-devops backend-node-devops=localhost:8082/backend-node-devops:${BUILD_NUMBER}"
+                }
+            }
+        }
+        //stage('testeo ejecucion contenedor'){
+        //    steps{
+        //        sh 'docker run -d --rm -p 8000:3000 -e USERNAME=CMD -e PORT=3000 --name backend-node-devops-container localhost:8082/backend-node-devops:cmd'
+        //    }
+        //}
     }
 }
