@@ -1,7 +1,7 @@
 pipeline {
     agent any 
     stages {
-        stage('install docker node:22') {
+        stage('Install docker node:22') {
             agent {
                 docker{
                     image 'node:22'
@@ -9,17 +9,17 @@ pipeline {
                 }
             }
             stages{
-                stage('install dependencies'){
+                stage('Install dependencies'){
                     steps {
                         sh 'npm install'
                     }
                 }
-                stage('ejecucion tests'){
+                stage('Ejecución tests'){
                     steps{
                         sh 'npm run test:cov'
                     }
                 }    
-                stage('construccion aplicación'){
+                stage('Construcción aplicación'){
                     steps{
                         sh 'npm run build'
                     }
@@ -35,7 +35,7 @@ pipeline {
                 }
             }
             stages{
-                stage('upload código a sonarqube'){
+                stage('Upload código a sonarqube'){
                     steps{
                         withSonarQubeEnv('SonarQube'){
                             sh 'sonar-scanner'
@@ -57,14 +57,31 @@ pipeline {
                 }
             }
         }
-        stage('etapa empaquetado y delivery'){
-            steps('etapa de delivery'){
+        stage('Etapa empaquetado y delivery'){
+            steps('Etapa de delivery'){
                 script{
                     docker.withRegistry('http://localhost:8082/', 'nexus-credentials'){
                     sh 'docker tag backend-node-devops:cmd localhost:8082/backend-node-devops:cmd'
                     sh 'docker push localhost:8082/backend-node-devops:cmd'
                     }
                 }  
+            }
+        }
+
+        stage('Despliegue continuo') {
+            when {
+                branch 'main'
+            }
+            agent{
+                docker{
+                    image 'alpine/k8s:1.32.2'
+                    reuseNode true
+                }
+            }
+            steps {
+                withKubeConfig([credentialsId: 'kubeconfig-docker']){
+                     sh "kubectl -n devops set image deployments backend-node-devops backend-node-devops=localhost:8082/backend-node-devops:${BUILD_NUMBER}"
+                }
             }
         }
         //stage('testeo ejecucion contenedor'){
