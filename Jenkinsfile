@@ -84,7 +84,11 @@ pipeline {
             }
             steps {
                 withKubeConfig([credentialsId: 'kubeconfig-docker']){
-                     sh "kubectl -n devops set image deployments backend-node-devops backend-node-devops=localhost:8082/backend-node-devops:${BUILD_NUMBER}"
+                    sh "kubectl -n devops set image deployments backend-node-devops backend-node-devops=localhost:8082/backend-node-devops:${BUILD_NUMBER}"
+
+                    sh 'kubectl apply -f kubernetes.yaml -n devops'
+                    sh 'kubectl rollout status deployment/backend-node-devops -n devops --timeout=2m'
+                    sh 'kubectl get pods -n devops'
                 }
             }
         }
